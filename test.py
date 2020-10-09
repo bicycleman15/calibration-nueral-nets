@@ -41,7 +41,7 @@ with torch.no_grad():
             logits, size=(H, W), mode="bilinear", align_corners=False
         )
 
-        probs = torch.softmax(logits, dim=1)[0]
+        probs = torch.nn.functional.softmax(logits, dim=1)[0]
         probs = probs.cpu().numpy()
         # print(probs.shape) # [21, H, W]
 
