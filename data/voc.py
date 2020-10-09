@@ -2,6 +2,11 @@ import torch.utils.data as data
 from PIL import Image
 import os
 
+import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
+from utils.image import MaskToTensor
+import numpy as np
+
 
 class VOCSegmentation(data.Dataset):
     """`Pascal VOC <http://host.robots.ox.ac.uk/pascal/VOC/>`_ Segmentation Dataset.
@@ -60,16 +65,40 @@ class VOCSegmentation(data.Dataset):
         Returns:
             tuple: (image, target) where target is the image segmentation.
         """
-        img = Image.open(self.images[index]).convert('RGB')
+        raw_img = Image.open(self.images[index]).convert('RGB')
         target = Image.open(self.masks[index])
 
         if self.transform is not None:
-            img = self.transform(img)
+            img = self.transform(raw_img)
 
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, target
+        # maybe fix this step for faster speed
+        raw_img = np.array(raw_img).astype(np.uint8)
+
+        return img, target, raw_img
 
     def __len__(self):
         return len(self.images)
+
+def _give_val_loader(root_path = './'):
+
+    # Create transforms
+    input_transform = transforms.Compose([ # No need to resize here in segmentation tasks
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # resnet normalizing values
+    ])
+
+    target_transform = MaskToTensor()
+
+    val_data = VOCSegmentation(root_path,
+                           image_set='val',
+                           transform=input_transform,
+                           target_transform=target_transform
+                           )
+
+    # Create data loader
+    val_loader = DataLoader(val_data, batch_size=1, num_workers=4, shuffle=True)
+
+    return val_loader
