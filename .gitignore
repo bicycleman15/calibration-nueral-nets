@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 
 VOC2012/
+.idea/
+.vscode/
